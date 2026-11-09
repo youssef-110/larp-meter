@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LARP METER // Calibrated Roleplay Dosimeter</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0d0f12;
+      --chassis: #16191f;
+      --chassis-border: #232832;
+      --dial-bg: #f2ede0;
+      --dial-text: #1b1c1d;
+      --amber: #f59e0b;
+      --amber-glow: rgba(245, 158, 11, 0.4);
+      --red: #ef4444;
+      --red-glow: rgba(239, 68, 68, 0.6);
+      --green: #10b981;
+      --brass: #c5a059;
+      --brass-dark: #7a5f2a;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body {
+      background-color: var(--bg);
+      background-image: 
+        radial-gradient(ellipse at 50% 20%, #1c212b 0%, #0a0c0f 80%),
+        repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 0, 0, 0.3) 2px, rgba(0, 0, 0, 0.3) 4px);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem 1rem;
+      font-family: 'JetBrains Mono', monospace;
+      color: #e2e8f0;
+      overflow-x: hidden;
+    }
+
+    /* Outer Instrument Rack */
+    .instrument-unit {
+      width: 100%;
+      max-width: 680px;
+      background: linear-gradient(180deg, #1f242d 0%, #15181f 40%, #111317 100%);
+      border: 3px solid #2b323f;
+      border-radius: 20px;
+      box-shadow: 
+        0 30px 60px -15px rgba(0, 0, 0, 0.9),
+        0 0 0 1px rgba(255, 255, 255, 0.05) inset,
+        0 2px 4px rgba(255, 255, 255, 0.1) inset;
+      padding: 2rem 1.75rem;
+      position: relative;
+    }
+
+    /* Realistic Hex Corner Screws */
+    .screw {
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      background: radial-gradient(circle, #3d4655 35%, #181c24 75%, #0d0f13 100%);
+      border-radius: 50%;
+      box-shadow: 
+        inset 0 1px 2px rgba(255, 255, 255, 0.25),
+        0 1px 2px rgba(0, 0, 0, 0.8);
+    }
+    .screw::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 8px;
+      height: 2px;
+      background: #111419;
+      transform: translate(-50%, -50%) rotate(42deg);
+      box-shadow: 0 0.5px 0.5px rgba(255,255,255,0.2);
+    }
+    .screw-tl { top: 12px; left: 12px; }
+    .screw-tr { top: 12px; right: 12px; }
+    .screw-bl { bottom: 12px; left: 12px; }
+    .screw-br { bottom: 12px; right: 12px; }
+
+    /* Instrument Header Badge */
+    .header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #232935;
+      padding-bottom: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .badge-plate {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .badge-model {
+      font-size: 0.65rem;
+      letter-spacing: 0.25em;
+      color: #718096;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .badge-title {
+      font-family: 'Chakra Petch', sans-serif;
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: #f8fafc;
+      text-shadow: 0 0 12px rgba(255, 255, 255, 0.2);
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .status-pilot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--red);
+      box-shadow: 0 0 12px var(--red);
+      animation: pulse-danger 0.6s infinite alternate ease-in-out;
+    }
+
+    @keyframes pulse-danger {
+      from { opacity: 0.4; transform: scale(0.9); }
+      to { opacity: 1; transform: scale(1.15); box-shadow: 0 0 16px var(--red); }
+    }
+
+    .serial-box {
+      font-size: 0.65rem;
+      letter-spacing: 0.15em;
+      color: #94a3b8;
+      text-align: right;
+      line-height: 1.4;
+      background: #0d1016;
+      padding: 0.4rem 0.6rem;
+      border-radius: 6px;
+      border: 1px solid #242c3b;
+    }
+
+    /* Analog Dial Housing */
+    .meter-housing {
+      position: relative;
+      background: var(--dial-bg);
+      border-radius: 12px;
+      box-shadow: 
+        inset 0 10px 25px rgba(0, 0, 0, 0.6),
+        inset 0 0 0 3px #181a1d,
+        0 4px 10px rgba(0, 0, 0, 0.7);
+      padding: 1.25rem 1rem 0.5rem;
+      overflow: hidden;
+      border: 2px solid #3c4454;
+    }
+
+    /* Convex Glass Glare Reflection */
+    .glass-glare {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 55%;
+      background: linear-gradient(180deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.06) 60%, transparent 100%);
+      pointer-events: none;
+      border-radius: 10px 10px 100px 100px / 10px 10px 25px 25px;
+      z-index: 10;
+    }
+
+    .gauge-svg {
+      width: 100%;
+      height: auto;
+      display: block;
+      overflow: visible;
+    }
+
+    /* Warning Overload Banner across dial */
+    .overload-flag {
+      position: absolute;
+      top: 24%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #dc2626;
+      color: #fff;
+      font-weight: 800;
+      font-size: 0.75rem;
+      letter-spacing: 0.22em;
+      padding: 0.25rem 1rem;
+      border-radius: 4px;
+      border: 1px solid #fee2e2;
+      box-shadow: 0 4px 12px rgba(220, 38, 38, 0.6);
+      text-transform: uppercase;
+      animation: alert-flash 0.4s infinite alternate;
+      z-index: 5;
+    }
+
+    @keyframes alert-flash {
+      from { background: #b91c1c; opacity: 0.85; }
+      to { background: #ef4444; opacity: 1; transform: translateX(-50%) scale(1.04); }
+    }
+
+    /* Status Console and Digital Readouts */
+    .readout-panel {
+      margin-top: 1.5rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.85rem;
+    }
+
+    .readout-card {
+      background: #0b0d11;
+      border: 1px solid #1f2735;
+      border-radius: 8px;
+      padding: 0.75rem 0.9rem;
+      position: relative;
+    }
+
+    .readout-label {
+      font-size: 0.62rem;
+      letter-spacing: 0.15em;
+      color: #64748b;
+      text-transform: uppercase;
+      margin-bottom: 0.35rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .readout-val {
+      font-family: 'Chakra Petch', monospace;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      letter-spacing: 0.05em;
+    }
+
+    .readout-val.danger {
+      color: #ff4d4d;
+      text-shadow: 0 0 10px rgba(255, 77, 77, 0.6);
+    }
+
+    .readout-val.amber {
+      color: #fbbf24;
+      text-shadow: 0 0 10px rgba(251, 191, 36, 0.4);
+    }
+
+    .terminal-ticker {
+      grid-column: 1 / -1;
+      background: #080a0d;
+      border: 1px solid #1a2230;
+      border-radius: 8px;
+      padding: 0.65rem 0.85rem;
+      font-size: 0.72rem;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
+    .ticker-icon {
+      color: #f43f5e;
+      font-weight: bold;
+    }
+
+    .ticker-content {
+      display: inline-block;
+      animation: ticker 18s linear infinite;
+    }
+
+    @keyframes ticker {
+      0% { transform: translateX(10%); }
+      100% { transform: translateX(-100%); }
+    }
+
+    /* Mechanical Controls */
+    .controls-panel {
+      margin-top: 1.5rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      border-top: 2px solid #232935;
+      padding-top: 1.25rem;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .btn-tactile {
+      background: linear-gradient(180deg, #2a313e 0%, #1a1e27 100%);
+      border: 1px solid #3e4859;
+      border-bottom: 3px solid #111419;
+      color: #f1f5f9;
+      padding: 0.65rem 1.2rem;
+      border-radius: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.08s ease;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.4);
+    }
+
+    .btn-tactile:hover {
+      background: linear-gradient(180deg, #333c4c 0%, #202631 100%);
+      border-color: #526077;
+    }
+
+    .btn-tactile:active {
+      transform: translateY(2px);
+      border-bottom: 1px solid #111419;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.6);
+    }
+
+    .btn-danger {
+      background: linear-gradient(180deg, #b91c1c 0%, #7f1d1d 100%);
+      border-color: #ef4444;
+      border-bottom: 3px solid #450a0a;
+      color: #fff;
+      box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+    }
+
+    .btn-danger:hover {
+      background: linear-gradient(180deg, #dc2626 0%, #991b1b 100%);
+      box-shadow: 0 0 20px rgba(239, 68, 68, 0.6);
+    }
+
+    .selector-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 0.72rem;
+      color: #94a3b8;
+    }
+
+    .styled-select {
+      background: #0d1016;
+      color: #f8fafc;
+      border: 1px solid #333f52;
+      border-radius: 6px;
+      padding: 0.55rem 0.8rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      font-weight: 600;
+      cursor: pointer;
+      outline: none;
+    }
+
+    .styled-select:focus {
+      border-color: #38bdf8;
+    }
+
+    /* Sound Switch */
+    .audio-toggle {
+      background: transparent;
+      border: 1px solid #334155;
+      color: #94a3b8;
+      border-radius: 6px;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.7rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .audio-toggle.active {
+      border-color: var(--amber);
+      color: var(--amber);
+    }
+
+    /* Footer stamp */
+    .footer-note {
+      margin-top: 1.5rem;
+      font-size: 0.68rem;
+      color: #4b5563;
+      text-align: center;
+      letter-spacing: 0.12em;
+    }
+
+    /* Needle & Peg Elements in SVG */
+    .stop-peg {
+      fill: #1f232b;
+      stroke: #737c8c;
+      stroke-width: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="instrument-unit">
+    <!-- Precision Hex Screws -->
+    <div class="screw screw-tl"></div>
+    <div class="screw screw-tr"></div>
+    <div class="screw screw-bl"></div>
+    <div class="screw screw-br"></div>
+
+    <!-- Machine Badge -->
+    <div class="header-bar">
+      <div class="badge-plate">
+        <span class="badge-model">ISO-9002 // CALIBRATED DETECTOR</span>
+        <div class="badge-title">
+          <span class="status-pilot"></span>
+          LARP METER
+        </div>
+      </div>
+      <div class="serial-box">
+        REG: 994-OMEGA<br>
+        SENSITIVITY: 1000x<br>
+        STATUS: CRITICAL
+      </div>
+    </div>
+
+    <!-- Analog Gauge Window -->
+    <div class="meter-housing">
+      <div class="glass-glare"></div>
+      <div class="overload-flag" id="overloadTag">⚡ MAXIMUM LARP PEGGED ⚡</div>
+
+      <svg class="gauge-svg" viewBox="0 0 540 280" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <!-- Radial & Linear Gradients for Dial Plate -->
+          <radialGradient id="dialLighting" cx="50%" cy="100%" r="90%">
+            <stop offset="0%" stop-color="#fffef7" />
+            <stop offset="65%" stop-color="#ede7d8" />
+            <stop offset="100%" stop-color="#ded4be" />
+          </radialGradient>
+
+          <linearGradient id="needleGradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#dc2626" />
+            <stop offset="70%" stop-color="#b91c1c" />
+            <stop offset="100%" stop-color="#7f1d1d" />
+          </linearGradient>
+
+          <filter id="needleShadow" x="-20%" y="-20%" width="150%" height="150%">
+            <feDropShadow dx="3" dy="5" stdDeviation="3.5" flood-color="rgba(0,0,0,0.35)" />
+          </filter>
+        </defs>
+
+        <!-- Dial Face Background Fill -->
+        <rect x="0" y="0" width="540" height="280" rx="10" fill="url(#dialLighting)" />
+
+        <!-- Scale Color Bands (Safe green -> Suspicious amber -> Absolute Larp Red) -->
+        <!-- Center of needle pivot: (270, 255), Radius: 195 -->
+        <!-- Arc 1: Normal (Green/Neutral) -60deg to -20deg -->
+        <path d="M 101 157 A 195 195 0 0 1 203 72" fill="none" stroke="#22c55e" stroke-width="8" stroke-linecap="round" />
+        <!-- Arc 2: Embellishing (Amber) -20deg to +20deg -->
+        <path d="M 203 72 A 195 195 0 0 1 336 72" fill="none" stroke="#f59e0b" stroke-width="8" />
+        <!-- Arc 3: Dangerously Over-Larped (Red) +20deg to +60deg -->
+        <path d="M 336 72 A 195 195 0 0 1 438 157" fill="none" stroke="#ef4444" stroke-width="12" stroke-linecap="round" />
+
+        <!-- Tick Arc Track -->
+        <path d="M 92 165 A 205 205 0 0 1 448 165" fill="none" stroke="#1f242d" stroke-width="2" />
+
+        <!-- Major Ticks and Scale Numbers -->
+        <!-- Generated visually for needle angle span -60° to +60° -->
+        <!-- 0% -->
+        <line x1="92" y1="165" x2="105" y2="157" stroke="#1b1c1d" stroke-width="3" />
+        <text x="76" y="180" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="700" fill="#2d3748">0%</text>
+        <text x="56" y="140" font-family="'JetBrains Mono', monospace" font-size="8.5" font-weight="700" fill="#4a5568">GROUNDED</text>
+
+        <!-- 25% -->
+        <line x1="163" y1="102" x2="171" y2="113" stroke="#1b1c1d" stroke-width="2" />
+        <text x="145" y="94" font-family="'JetBrains Mono', monospace" font-size="10" font-weight="600" fill="#4a5568">25%</text>
+
+        <!-- 50% -->
+        <line x1="270" y1="50" x2="270" y2="65" stroke="#1b1c1d" stroke-width="3" />
+        <text x="270" y="42" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="700" fill="#2d3748" text-anchor="middle">50%</text>
+        <text x="270" y="85" font-family="'JetBrains Mono', monospace" font-size="8" font-weight="700" fill="#b45309" text-anchor="middle">POSTURING</text>
+
+        <!-- 75% -->
+        <line x1="377" y1="102" x2="369" y2="113" stroke="#1b1c1d" stroke-width="2" />
+        <text x="382" y="94" font-family="'JetBrains Mono', monospace" font-size="10" font-weight="600" fill="#4a5568">75%</text>
+
+        <!-- 100% MAX -->
+        <line x1="448" y1="165" x2="435" y2="157" stroke="#b91c1c" stroke-width="4" />
+        <text x="452" y="178" font-family="'JetBrains Mono', monospace" font-size="12" font-weight="800" fill="#dc2626">MAX</text>
+        <text x="420" y="132" font-family="'JetBrains Mono', monospace" font-size="9.5" font-weight="800" fill="#dc2626">CRITICAL</text>
+
+        <!-- Minor Ticks -->
+        <g stroke="#4a5568" stroke-width="1.2">
+          <!-- -50° -->
+          <line x1="113" y1="140" x2="123" y2="135" />
+          <!-- -40° -->
+          <line x1="139" y1="118" x2="148" y2="114" />
+          <!-- -20° -->
+          <line x1="198" y1="83" x2="204" y2="92" />
+          <!-- -10° -->
+          <line x1="233" y1="64" x2="237" y2="74" />
+          <!-- +10° -->
+          <line x1="307" y1="64" x2="303" y2="74" />
+          <!-- +20° -->
+          <line x1="342" y1="83" x2="336" y2="92" />
+          <!-- +40° -->
+          <line x1="401" y1="118" x2="392" y2="114" />
+          <!-- +50° -->
+          <line x1="427" y1="140" x2="417" y2="135" />
+        </g>
+
+        <!-- Physical Peg Stops (Left & Right limiters) -->
+        <circle cx="82" cy="172" r="5" class="stop-peg" />
+        <circle cx="458" cy="172" r="5" class="stop-peg" />
+
+        <!-- Stamped Plate in dial center -->
+        <text x="270" y="175" font-family="'Chakra Petch', sans-serif" font-size="20" font-weight="700" letter-spacing="4" fill="#1b1c1d" text-anchor="middle">LARP METER</text>
+        <text x="270" y="195" font-family="'JetBrains Mono', monospace" font-size="8.5" font-weight="700" letter-spacing="2" fill="#78716c" text-anchor="middle">MODEL LM-9000 // MAX DILUTION DETECTOR</text>
+
+        <!-- DYNAMIC NEEDLE ASSEMBLY (Pivot at 270, 255) -->
+        <g id="needleAssembly" transform="rotate(62, 270, 255)" filter="url(#needleShadow)">
+          <!-- Main Knife-edge Needle Blade -->
+          <polygon points="268.5,255 269.2,55 270,42 270.8,55 271.5,255" fill="url(#needleGradient)" />
+          <!-- Needle Counterweight tail -->
+          <polygon points="267,255 268,280 272,280 273,255" fill="#1b1c1d" />
+        </g>
+
+        <!-- Heavy Brass/Black Pivot Hub -->
+        <circle cx="270" cy="255" r="22" fill="#1a1c22" stroke="#374151" stroke-width="2" />
+        <circle cx="270" cy="255" r="14" fill="#c5a059" stroke="#7a5f2a" stroke-width="1.5" />
+        <circle cx="270" cy="255" r="5" fill="#111317" />
+      </svg>
+    </div>
+
+    <!-- Precision Digital Telemetry Readouts -->
+    <div class="readout-panel">
+      <div class="readout-card">
+        <div class="readout-label">
+          <span>●</span> MEASURED INTENSITY
+        </div>
+        <div class="readout-val danger" id="valIntensity">LEVEL: MAX</div>
+      </div>
+
+      <div class="readout-card">
+        <div class="readout-label">
+          <span>●</span> VAPORWARE RISK
+        </div>
+        <div class="readout-val danger">CATASTROPHIC</div>
+      </div>
+
+      <div class="readout-card">
+        <div class="readout-label">
+          <span>●</span> BUZZWORD SATURATION
+        </div>
+        <div class="readout-val amber" id="valBuzzword">99.87 %</div>
+      </div>
+
+      <div class="readout-card">
+        <div class="readout-label">
+          <span>●</span> SUBSTANCE DETECTED
+        </div>
+        <div class="readout-val" style="color: #64748b;">&lt; 0.001 %</div>
+      </div>
+
+      <!-- Realtime Intercept Ticker -->
+      <div class="terminal-ticker">
+        <span class="ticker-icon">LIVE RADAR:</span>
+        <div class="ticker-content" id="tickerStream">
+          INTERCEPTED: "Stealth founder building the OS for intelligence" ... "Advisor to 14 stealth seed unicorns" ... "Disrupting consciousness via decentralized compute" ... "Uncapped SAFE at $400M valuation" ... "Thoughts on this paradigm shift? 👇" ... "Can't announce yet, but big things dropping Tuesday" ...
+        </div>
+      </div>
+    </div>
+
+    <!-- Tactile Operator Controls -->
+    <div class="controls-panel">
+      <div class="button-group">
+        <button class="btn-tactile btn-danger" id="btnMaxSpike">
+          ⚡ FORCE SURGE (MAX)
+        </button>
+        <button class="btn-tactile" id="btnRecalibrate">
+          ↺ RE-CALIBRATE
+        </button>
+      </div>
+
+      <div class="selector-wrap">
+        <span>SUBJECT:</span>
+        <select class="styled-select" id="sampleSelect">
+          <option value="99.9">X / Twitter Thought Leader</option>
+          <option value="95.5">Stealth AI Pre-seed Founder</option>
+          <option value="92.0">Keynote Visionary Panelist</option>
+          <option value="88.0">Uncapped SAFE Architect</option>
+          <option value="74.0">LinkedIn Synergist</option>
+          <option value="12.0">Actual Software Engineer</option>
+        </select>
+      </div>
+
+      <button class="audio-toggle" id="audioToggle">
+        <span id="audioIcon">🔈</span> <span id="audioState">SOUND OFF</span>
+      </button>
+    </div>
+
+    <div class="footer-note">
+      CALIBRATED ACCORDING TO HIGH-FREQUENCY INTERNET POSTURING STANDARDS
+    </div>
+  </div>
+
+  <script>
+    // --- Audio Synthesis via Web Audio API ---
+    let audioCtx = null;
+    let audioEnabled = false;
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function playPegClick() {
+      if (!audioEnabled || !audioCtx) return;
+      const t = audioCtx.currentTime;
+      // High-frequency metallic ping when needle hits stop pin
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(1400, t);
+      osc.frequency.exponentialRampToValueAtTime(320, t + 0.08);
+      gain.gain.setValueAtTime(0.3, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(t);
+      osc.stop(t + 0.09);
+    }
+
+    function playRelayThunk() {
+      if (!audioEnabled || !audioCtx) return;
+      const t = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(110, t);
+      osc.frequency.exponentialRampToValueAtTime(30, t + 0.06);
+      gain.gain.setValueAtTime(0.2, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(t);
+      osc.stop(t + 0.07);
+    }
+
+    function playGeigerClick() {
+      if (!audioEnabled || !audioCtx) return;
+      const t = audioCtx.currentTime;
+      const bufferSize = audioCtx.sampleRate * 0.005;
+      const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.3));
+      }
+      const noise = audioCtx.createBufferSource();
+      noise.buffer = buffer;
+      const gain = audioCtx.createGain();
+      gain.gain.value = 0.25;
+      noise.connect(gain);
+      gain.connect(audioCtx.destination);
+      noise.start(t);
+    }
+
+    // Audio Toggle Handler
+    const audioToggle = document.getElementById('audioToggle');
+    const audioIcon = document.getElementById('audioIcon');
+    const audioState = document.getElementById('audioState');
+
+    audioToggle.addEventListener('click', () => {
+      initAudio();
+      audioEnabled = !audioEnabled;
+      if (audioEnabled) {
+        audioToggle.classList.add('active');
+        audioIcon.textContent = '🔊';
+        audioState.textContent = 'AUDIO ENGAGED';
+        playRelayThunk();
+      } else {
+        audioToggle.classList.remove('active');
+        audioIcon.textContent = '🔈';
+        audioState.textContent = 'SOUND OFF';
+      }
+    });
+
+    // --- Needle Physics & Harmonic Spring Model ---
+    // Scale mapping: 0% = -60 deg, 50% = 0 deg, 100% = +60 deg, Peg Limit = +63.5 deg
+    const MIN_ANGLE = -62;
+    const MAX_PEG_ANGLE = 62.8;
+
+    function percentToAngle(pct) {
+      // 0 -> -60, 100 -> +60
+      return -60 + (pct / 100) * 120;
+    }
+
+    let currentAngle = -58;
+    let targetAngle = 62.5; // Default starts soaring straight to MAX
+    let velocity = 0;
+    let lastTime = performance.now();
+
+    const springK = 38.0;   // Spring stiffness
+    const damping = 4.2;    // Damping factor
+    const restitution = 0.42; // Elasticity when hitting physical stop-peg
+
+    const needleAssembly = document.getElementById('needleAssembly');
+    const overloadTag = document.getElementById('overloadTag');
+    const valIntensity = document.getElementById('valIntensity');
+    const valBuzzword = document.getElementById('valBuzzword');
+    const sampleSelect = document.getElementById('sampleSelect');
+
+    let hitPegCooldown = 0;
+    let jitterPhase = 0;
+
+    function animate(now) {
+      const dt = Math.min((now - lastTime) / 1000, 0.06);
+      lastTime = now;
+
+      // Realistic Spring Force
+      const force = -springK * (currentAngle - targetAngle);
+      const accel = force - (damping * velocity);
+
+      velocity += accel * dt;
+      currentAngle += velocity * dt;
+
+      // Peg collision (Right stop peg / MAX level)
+      if (currentAngle >= MAX_PEG_ANGLE) {
+        currentAngle = MAX_PEG_ANGLE;
+        if (velocity > 4) {
+          velocity = -velocity * restitution; // Bounce back
+          if (now - hitPegCooldown > 120) {
+            playPegClick();
+            hitPegCooldown = now;
+          }
+        } else {
+          velocity = 0;
+        }
+      }
+
+      // Left stop peg
+      if (currentAngle <= MIN_ANGLE) {
+        currentAngle = MIN_ANGLE;
+        if (velocity < -4) {
+          velocity = -velocity * restitution;
+          if (now - hitPegCooldown > 120) {
+            playPegClick();
+            hitPegCooldown = now;
+          }
+        } else {
+          velocity = 0;
+        }
+      }
+
+      // If pegged at or near MAX, add electrical jitter & random micro-tremble
+      let renderAngle = currentAngle;
+      if (targetAngle >= 58 && Math.abs(currentAngle - MAX_PEG_ANGLE) < 1.5) {
+        jitterPhase += 0.4;
+        const microJitter = (Math.sin(jitterPhase * 7.3) + Math.cos(jitterPhase * 13.7) + (Math.random() - 0.5) * 1.4) * 0.45;
+        renderAngle = Math.min(MAX_PEG_ANGLE, currentAngle + microJitter);
+
+        // Random Geiger ticks at high overload
+        if (Math.random() < 0.08) {
+          playGeigerClick();
+        }
+      }
+
+      // Render needle SVG rotation around pivot (270, 255)
+      needleAssembly.setAttribute('transform', `rotate(${renderAngle.toFixed(2)}, 270, 255)`);
+
+      // Update UI Overload status
+      if (renderAngle > 54) {
+        overloadTag.style.display = 'block';
+        valIntensity.textContent = 'LEVEL: MAX';
+        valIntensity.className = 'readout-val danger';
+      } else {
+        overloadTag.style.display = 'none';
+        const displayPct = Math.max(0, Math.min(100, Math.round(((renderAngle + 60) / 120) * 100)));
+        valIntensity.textContent = `${displayPct}% LOAD`;
+        valIntensity.className = renderAngle > 20 ? 'readout-val amber' : 'readout-val';
+      }
+
+      requestAnimationFrame(animate);
+    }
+
+    requestAnimationFrame(animate);
+
+    // Initial surge: start after 300ms from 0 to MAX
+    setTimeout(() => {
+      targetAngle = 62.8;
+      velocity = 140; // Initial punch
+    }, 400);
+
+    // Controls
+    document.getElementById('btnMaxSpike').addEventListener('click', () => {
+      initAudio();
+      playRelayThunk();
+      sampleSelect.value = "99.9";
+      valBuzzword.textContent = '99.98 %';
+      currentAngle = -20;
+      velocity = 220;
+      targetAngle = 62.8;
+    });
+
+    document.getElementById('btnRecalibrate').addEventListener('click', () => {
+      initAudio();
+      playRelayThunk();
+      targetAngle = -59;
+      velocity = -120;
+      setTimeout(() => {
+        targetAngle = percentToAngle(parseFloat(sampleSelect.value));
+        velocity = 160;
+      }, 700);
+    });
+
+    sampleSelect.addEventListener('change', (e) => {
+      initAudio();
+      playRelayThunk();
+      const val = parseFloat(e.target.value);
+      targetAngle = val >= 95 ? 62.8 : percentToAngle(val);
+      velocity = 110;
+      valBuzzword.textContent = `${val.toFixed(1)} %`;
+    });
+  </script>
+</body>
+</html>
